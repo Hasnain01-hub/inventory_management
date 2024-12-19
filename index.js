@@ -1,5 +1,6 @@
 const express = require("express");
-const passport = require("passport");
+const path = require("path");
+// const passport = require("passport");
 var session = require("express-session");
 const mongoose = require("mongoose");
 const morgan = require("morgan");
@@ -35,6 +36,7 @@ app.use(
     credentials: true,
   })
 );
+app.use("/uploads", express.static(path.join(__dirname, "uploads"))); // Serve files from 'uploads' directory
 
 app.set("trust proxy", 1); // trust first proxy
 app.use(
@@ -45,7 +47,8 @@ app.use(
     cookie: { secure: true },
   })
 );
-app.use(passport.initialize());
+
+// app.use(passport.initialize());
 // Importing Routes
 const authRoute = require("./route/auth.route");
 

@@ -26,14 +26,18 @@ const warehouseSchema = new mongoose.Schema(
       type: String,
       //   required: true,
     },
-    Notes: {
+    notes: {
       type: String,
     },
     attachments: {
-      type: String,
+      type: [String],
+      description:
+        "Path or URL to the attachment file related to the warehouse item",
     },
     warehouse_photo: {
       type: String,
+      description:
+        "Path or URL to the attachment file related to the warehouse",
     },
   },
   { timestamps: true } // createdAt, updatedAt timestamps will be taken care of by this automatically
