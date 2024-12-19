@@ -5,6 +5,10 @@ const orderInfoSchema = new mongoose.Schema(
     date: {
       type: Date,
       default: Date.now,
+      validate: {
+        validator: (value) => !isNaN(new Date(value).getTime()),
+        message: "Invalid date format",
+      },
     },
     order_id: {
       type: String,

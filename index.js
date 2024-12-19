@@ -57,6 +57,9 @@ app.use("/api", inventoryRoute);
 app.use("/api", require("./route/order.route"));
 app.use("/api", require("./route/purchase.route"));
 app.use("/api", require("./route/sale.route"));
+app.use("/api", require("./route/expenses.route"));
+app.use("/api", require("./route/customer.route"));
+app.use("/api", require("./route/return.route"));
 // app.use("/api/auth", authRoute);
 
 app.use("/", function (req, res) {

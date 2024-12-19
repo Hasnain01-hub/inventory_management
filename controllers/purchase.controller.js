@@ -13,7 +13,7 @@ exports.fetchAllPurchase = async (req, res) => {
 
       if (purchase.length > 0) {
         return res.status(200).json({
-          data: inventoryWithUrls,
+          data: purchase,
           success: true,
         });
       } else {

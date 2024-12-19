@@ -21,6 +21,10 @@ const warehouseSchema = new mongoose.Schema(
     rented_from_date: {
       type: Date,
       required: true,
+      validate: {
+        validator: (value) => !isNaN(new Date(value).getTime()),
+        message: "Invalid date format",
+      },
     },
     expense_id: {
       type: String,
