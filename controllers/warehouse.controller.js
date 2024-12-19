@@ -14,6 +14,7 @@ const storage = multer.diskStorage({
     cb(null, `${Date.now()}-${file.originalname}`); // Add a timestamp to the file name
   },
 });
+
 const upload = multer({
   storage,
   fileFilter: (req, file, cb) => {
@@ -25,6 +26,55 @@ const upload = multer({
     }
   },
 });
+
+exports.fetchAllWarehouse = async (req, res) => {
+  if (req.user) {
+    await Warehouse.find({}, async (err, warehouse) => {
+      if (err) {
+        console.log(err);
+        return res.status(401).json({
+          message: "No Inventory found",
+          success: false,
+        });
+      }
+
+      // Map over the inventory and construct full URLs for product_photo
+      const inventoryWithUrls = warehouse.map((item) => {
+        const productPhotoUrl = item.warehouse_photo
+          ? `http://your-vps-ip:3000/${item.product_photo}` // Prepend base URL
+          : null;
+        const attachmentUrls = item.attachments
+          ?.map((attachment) =>
+            attachment ? `http://your-vps-ip:3000/${attachment}` : null
+          )
+          .filter(Boolean); // Filter out null values in case of invalid paths
+
+        return {
+          ...item.toObject(),
+          warehouse_photo: productPhotoUrl, // Update product_photo to full URL
+          attachments: attachmentUrls,
+        };
+      });
+
+      if (inventoryWithUrls.length > 0) {
+        return res.status(200).json({
+          data: inventoryWithUrls,
+          success: true,
+        });
+      } else {
+        return res.status(200).json({
+          data: [],
+          success: true,
+        });
+      }
+    });
+  } else {
+    res.status(401).json({
+      message: "Admin not found!",
+      success: false,
+    });
+  }
+};
 
 exports.createWarehouse = async (req, res) => {
   // Use `fields` for multiple file uploads

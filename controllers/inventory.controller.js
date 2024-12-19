@@ -1,11 +1,14 @@
 const multer = require("multer");
 const path = require("path");
 const Inventory = require("../modal/inventory.modal");
+const fs = require("fs");
 
 const uploadsDir = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
+
+// Configure multer storage
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, uploadsDir); // Directory to save files
@@ -14,8 +17,11 @@ const storage = multer.diskStorage({
     cb(null, `${Date.now()}-${file.originalname}`); // Add a timestamp to the file name
   },
 });
+
+// File filter for specific MIME types
 const upload = multer({
   storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // Limit to 5MB
   fileFilter: (req, file, cb) => {
     const allowedMimeTypes = ["image/jpeg", "image/png", "application/pdf"];
     if (allowedMimeTypes.includes(file.mimetype)) {
@@ -68,21 +74,22 @@ exports.fetchAllInventory = async (req, res) => {
     });
   }
 };
+const multerMiddleware = upload.single("product_photo");
 
 exports.createInventory = async (req, res) => {
-  upload.single("product_photo")(req, res, async (err) => {
+  multerMiddleware(req, res, async (err) => {
     if (err) {
       return res
         .status(400)
         .json({ message: "File upload error", success: false });
     }
 
-    if (!req.user) {
-      return res.status(403).json({ message: "Unauthorized", success: false });
-    }
+    // if (!req.user) {
+    //   return res.status(403).json({ message: "Unauthorized", success: false });
+    // }
 
     const product_photo = req.file ? req.file.path : null;
-
+    console.log("File uploaded:", product_photo);
     try {
       const {
         product_name,
@@ -99,6 +106,7 @@ exports.createInventory = async (req, res) => {
         import_cost_eur,
         barcode,
       } = req.body;
+      console.log(product_photo, "product_photo");
 
       // Create inventory record
       const inventory = new Inventory({

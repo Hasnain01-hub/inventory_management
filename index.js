@@ -36,7 +36,8 @@ app.use(
     credentials: true,
   })
 );
-app.use("/uploads", express.static(path.join(__dirname, "uploads"))); // Serve files from 'uploads' directory
+
+// app.use("/uploads", express.static(path.join(__dirname, "uploads"))); // Serve files from 'uploads' directory
 
 app.set("trust proxy", 1); // trust first proxy
 app.use(
@@ -50,9 +51,13 @@ app.use(
 
 // app.use(passport.initialize());
 // Importing Routes
-const authRoute = require("./route/auth.route");
-
-app.use("/api/auth", authRoute);
+// const authRoute = require("./route/auth.route");
+const inventoryRoute = require("./route/warehouse.route");
+app.use("/api", inventoryRoute);
+app.use("/api", require("./route/order.route"));
+app.use("/api", require("./route/purchase.route"));
+app.use("/api", require("./route/sale.route"));
+// app.use("/api/auth", authRoute);
 
 app.use("/", function (req, res) {
   res.send("Server running");
