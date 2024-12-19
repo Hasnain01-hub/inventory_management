@@ -1,10 +1,10 @@
 const jwt = require("jsonwebtoken");
-const User = require("../model/user.model");
+const adminModal = require("../modal/admin.modal");
 require("dotenv").config();
 
-exports.verifyuser = async (req, res, next) => {
+exports.verifyUser = async (req, res, next) => {
   const authHeader = req.headers?.authtoken;
-
+  console.log(authHeader);
   if (authHeader) {
     const token = authHeader;
 
@@ -13,7 +13,9 @@ exports.verifyuser = async (req, res, next) => {
         return res.status(403).json("Token is not valid!");
       }
       console.log("jwt", _id);
-      const userData = await User.findOne({ email: _id.data.email });
+      const userData = await adminModal.findOne({
+        username: _id.username,
+      });
 
       if (!userData) {
         return res.status(404).json("User not found!");
@@ -24,7 +26,7 @@ exports.verifyuser = async (req, res, next) => {
         });
       }
 
-      req.user = userData;
+      req.admin = userData;
       next();
     });
   } else {

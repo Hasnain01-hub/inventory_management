@@ -1,7 +1,7 @@
 const saleModal = require("../modal/sale.modal");
 
 exports.fetchAllSale = async (req, res) => {
-  if (req.user) {
+  if (req.admin) {
     await saleModal.find({}, async (err, sale) => {
       if (err) {
         console.log(err);

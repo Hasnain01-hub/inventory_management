@@ -33,7 +33,7 @@ const upload = multer({
 });
 
 exports.fetchAllInventory = async (req, res) => {
-  if (req.user) {
+  if (req.admin) {
     await Inventory.find({}, async (err, inv) => {
       if (err) {
         console.log(err);
@@ -84,7 +84,7 @@ exports.createInventory = async (req, res) => {
         .json({ message: "File upload error", success: false });
     }
 
-    // if (!req.user) {
+    // if (!req.admin) {
     //   return res.status(403).json({ message: "Unauthorized", success: false });
     // }
 

@@ -1,7 +1,7 @@
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
-const Order = require("../models/order.model"); // Adjust the path as necessary
+const Order = require("../modal/order.modal"); // Adjust the path as necessary
 
 // Upload files
 const uploadsDir = path.join(__dirname, "uploads");

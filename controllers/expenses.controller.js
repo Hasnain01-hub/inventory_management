@@ -1,7 +1,7 @@
 const expensesModal = require("../modal/expenses.modal");
 
 exports.fetchAllExpenses = async (req, res) => {
-  if (req.user) {
+  if (req.admin) {
     await expensesModal.find({}, async (err, expenses) => {
       if (err) {
         console.log(err);

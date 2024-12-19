@@ -1,6 +1,7 @@
 const multer = require("multer");
 const path = require("path");
 const Warehouse = require("../modal/warehouse.modal");
+const fs = require("fs");
 //Upload files
 const uploadsDir = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadsDir)) {
@@ -28,7 +29,7 @@ const upload = multer({
 });
 
 exports.fetchAllWarehouse = async (req, res) => {
-  if (req.user) {
+  if (req.admin) {
     await Warehouse.find({}, async (err, warehouse) => {
       if (err) {
         console.log(err);
@@ -88,7 +89,7 @@ exports.createWarehouse = async (req, res) => {
         .json({ message: "File upload error", success: false });
     }
 
-    if (!req.user) {
+    if (!req.admin) {
       return res.status(403).json({ message: "Unauthorized", success: false });
     }
 

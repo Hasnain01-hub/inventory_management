@@ -1,7 +1,7 @@
 const returnModal = require("../modal/return.modal");
 
 exports.fetchAllReturn = async (req, res) => {
-  if (req.user) {
+  if (req.admin) {
     await returnModal.find({}, async (err, returns) => {
       if (err) {
         console.log(err);

@@ -1,7 +1,7 @@
 const customerModal = require("../modal/customer.modal");
 
 exports.fetchAllCustomer = async (req, res) => {
-  if (req.user) {
+  if (req.admin) {
     await customerModal.find({}, async (err, customer) => {
       if (err) {
         console.log(err);

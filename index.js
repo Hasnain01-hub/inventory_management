@@ -18,6 +18,7 @@ mongoose
     useNewUrlParser: true,
     useUnifiedTopology: true,
     useFindAndModify: false,
+    useCreateIndex: true, // Enable this option
   })
 
   .then(() => console.log("DB CONNECTED"))
@@ -51,7 +52,7 @@ app.use(
 
 // app.use(passport.initialize());
 // Importing Routes
-// const authRoute = require("./route/auth.route");
+const authRoute = require("./route/auth.route");
 const inventoryRoute = require("./route/warehouse.route");
 app.use("/api", inventoryRoute);
 app.use("/api", require("./route/order.route"));
@@ -60,7 +61,7 @@ app.use("/api", require("./route/sale.route"));
 app.use("/api", require("./route/expenses.route"));
 app.use("/api", require("./route/customer.route"));
 app.use("/api", require("./route/return.route"));
-// app.use("/api/auth", authRoute);
+app.use("/api/auth", authRoute);
 
 app.use("/", function (req, res) {
   res.send("Server running");

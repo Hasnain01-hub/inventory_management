@@ -1,7 +1,7 @@
 const purchaseModal = require("../modal/purchase.modal");
 
 exports.fetchAllPurchase = async (req, res) => {
-  if (req.user) {
+  if (req.admin) {
     await purchaseModal.find({}, async (err, purchase) => {
       if (err) {
         console.log(err);
