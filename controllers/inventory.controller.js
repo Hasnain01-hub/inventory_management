@@ -74,19 +74,22 @@ exports.fetchAllInventory = async (req, res) => {
     });
   }
 };
-const multerMiddleware = upload.single("product_photo");
 
+// Create Inventory
 exports.createInventory = async (req, res) => {
-  multerMiddleware(req, res, async (err) => {
+  upload.single("product_photo")(req, res, async (err) => {
     if (err) {
       return res
         .status(400)
         .json({ message: "File upload error", success: false });
     }
 
-    // if (!req.admin) {
-    //   return res.status(403).json({ message: "Unauthorized", success: false });
-    // }
+    if (req.admin.type !== "ADMIN" && req.admin.type !== "SUPER_ADMIN") {
+      return res.status(401).json({
+        message: "You are not authorized to delete order",
+        success: false,
+      });
+    }
 
     const product_photo = req.file ? req.file.path : null;
     console.log("File uploaded:", product_photo);
@@ -142,6 +145,258 @@ exports.createInventory = async (req, res) => {
         data: null,
         error: error.message,
       });
+    }
+  });
+};
+
+// Delete Inventory
+exports.deleteInventory = async (req, res) => {
+  try {
+    if (req.admin.type !== "ADMIN" && req.admin.type !== "SUPER_ADMIN") {
+      return res.status(401).json({
+        message: "You are not authorized to delete order",
+        success: false,
+      });
+    }
+    const { inventory_id } = req.body;
+
+    // Find and delete the inventory record by ID
+    const inventory = await Inventory.findByIdAndDelete(inventory_id);
+    if (!inventory) {
+      return res.status(404).json({
+        message: "Inventory not found",
+        success: false,
+      });
+    }
+
+    return res.status(200).json({
+      message: "Inventory deleted successfully",
+      success: true,
+    });
+  } catch (error) {
+    console.error("Error deleting inventory:", error);
+    return res.status(500).json({
+      message: "Error deleting inventory",
+      success: false,
+      error: error.message,
+    });
+  }
+};
+
+// Edit Inventory
+exports.editInventory = async (req, res) => {
+  if (req.admin.type !== "ADMIN" && req.admin.type !== "SUPER_ADMIN") {
+    return res.status(401).json({
+      message: "You are not authorized to delete order",
+      success: false,
+    });
+  }
+  upload.single("product_photo")(req, res, async (err) => {
+    if (err) {
+      return res
+        .status(400)
+        .json({ message: "File upload error", success: false });
+    }
+
+    try {
+      const { inventory_id, ...updateFields } = req.body;
+
+      // Find the inventory record by ID
+      const inventory = await Inventory.findById(inventory_id);
+      if (!inventory) {
+        return res.status(404).json({
+          message: "Inventory not found",
+          success: false,
+        });
+      }
+
+      // Update product photo if a new file is uploaded
+      if (req.file) {
+        updateFields.product_photo = req.file.path;
+      }
+
+      // Update other fields
+      for (const [key, value] of Object.entries(updateFields)) {
+        inventory[key] = value;
+      }
+
+      // Save updated inventory to database
+      await inventory.save();
+
+      return res.status(200).json({
+        message: "Inventory updated successfully",
+        success: true,
+        data: inventory,
+      });
+    } catch (error) {
+      console.error("Error updating inventory:", error);
+      return res.status(500).json({
+        message: "Error updating inventory",
+        success: false,
+        error: error.message,
+      });
+    }
+  });
+};
+
+// Filter Inventory
+exports.filterInventory = async (req, res) => {
+  try {
+    const {
+      product_name,
+      category,
+      warehouse,
+      supplier,
+      price_min,
+      price_max,
+      quantity_min,
+      quantity_max,
+    } = req.query;
+
+    // Build the filter object dynamically
+    const filters = {};
+
+    if (product_name) {
+      filters.product_name = { $regex: product_name, $options: "i" }; // Case-insensitive match
+    }
+
+    if (category) {
+      filters.category = category;
+    }
+
+    if (warehouse) {
+      filters.warehouse = warehouse;
+    }
+
+    if (supplier) {
+      filters.supplier = supplier;
+    }
+
+    if (price_min || price_max) {
+      filters.price_czk = {};
+      if (price_min) filters.price_czk.$gte = Number(price_min); // Greater than or equal to
+      if (price_max) filters.price_czk.$lte = Number(price_max); // Less than or equal to
+    }
+
+    if (quantity_min || quantity_max) {
+      filters.quantity = {};
+      if (quantity_min) filters.quantity.$gte = Number(quantity_min); // Greater than or equal to
+      if (quantity_max) filters.quantity.$lte = Number(quantity_max); // Less than or equal to
+    }
+
+    // Query the database with the filters
+    const inventoryItems = await Inventory.find(filters);
+
+    if (!inventoryItems.length) {
+      return res.status(404).json({
+        message: "No inventory items match the specified criteria",
+        success: false,
+        data: [],
+      });
+    }
+
+    return res.status(200).json({
+      message: "Inventory items fetched successfully",
+      success: true,
+      data: inventoryItems,
+    });
+  } catch (error) {
+    console.error("Error filtering inventory:", error);
+    return res.status(500).json({
+      message: "Error filtering inventory",
+      success: false,
+      error: error.message,
+    });
+  }
+};
+
+const csv_upload = multer({
+  dest: "uploads/", // Temporary folder for uploaded files
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === "text/csv") {
+      cb(null, true);
+    } else {
+      cb(new Error("Only CSV files are allowed"));
+    }
+  },
+});
+// Import Inventory from CSV
+exports.importInventoryFromCSV = async (req, res) => {
+  csv_upload.single("csv_file")(req, res, async (err) => {
+    if (err) {
+      return res
+        .status(400)
+        .json({ message: "File upload error", success: false });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({
+        message: "No file uploaded. Please upload a CSV file.",
+        success: false,
+      });
+    }
+
+    const filePath = req.file.path;
+
+    try {
+      const inventoryItems = [];
+
+      // Read and parse the CSV file
+      fs.createReadStream(filePath)
+        .pipe(csvParser())
+        .on("data", (row) => {
+          // Ensure each row contains valid data matching the schema
+          const item = {
+            product_name: row.product_name,
+            category: row.category || null,
+            warehouse: row.warehouse,
+            sku: row.sku,
+            price_czk: parseFloat(row.price_czk),
+            price_eur: parseFloat(row.price_eur),
+            supplier: row.supplier,
+            supplier_link: row.supplier_link,
+            quantity: parseInt(row.quantity, 10),
+            import_cost_usd: parseFloat(row.import_cost_usd) || null,
+            import_cost_czk: parseFloat(row.import_cost_czk) || null,
+            import_cost_eur: parseFloat(row.import_cost_eur) || null,
+            product_photo: row.product_photo || null,
+            barcode: row.barcode || null,
+          };
+          inventoryItems.push(item);
+        })
+        .on("end", async () => {
+          try {
+            // Save all items to the database
+            await Inventory.insertMany(inventoryItems);
+            res.status(201).json({
+              message: "Inventory imported successfully",
+              success: true,
+              data: inventoryItems,
+            });
+          } catch (dbError) {
+            console.error("Error saving to database:", dbError);
+            res.status(500).json({
+              message: "Error saving inventory to database",
+              success: false,
+              error: dbError.message,
+            });
+          } finally {
+            // Clean up: Delete the temporary CSV file
+            fs.unlinkSync(filePath);
+          }
+        });
+    } catch (error) {
+      console.error("Error processing CSV file:", error);
+      res.status(500).json({
+        message: "Error processing CSV file",
+        success: false,
+        error: error.message,
+      });
+
+      // Clean up: Delete the temporary CSV file
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
     }
   });
 };

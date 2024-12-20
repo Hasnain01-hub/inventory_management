@@ -6,6 +6,12 @@ const adminSchema = new mongoose.Schema({
     required: true,
     default: "ADMIN",
     enum: ["ADMIN", "SUPER_ADMIN"],
+    validate: {
+      validator: function (value) {
+        return ["ADMIN", "SUPER_ADMIN"].includes(value);
+      },
+      message: (props) => `${props.value} is not a valid admin type`,
+    },
   },
   password: {
     type: String,
