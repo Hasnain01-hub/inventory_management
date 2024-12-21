@@ -97,7 +97,7 @@ async function editAdmin(req, res) {
       }
     }
 
-    if (type != adminToUpdate.type) adminToUpdate.type = type;
+    if (type) adminToUpdate.type = type;
 
     // Save the updated admin
     await adminToUpdate.save();

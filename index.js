@@ -6,11 +6,13 @@ const mongoose = require("mongoose");
 const morgan = require("morgan");
 const bodyParser = require("body-parser");
 const cors = require("cors");
-
+const http = require("http");
+const { Server } = require("socket.io");
 require("dotenv").config();
-
 //app
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server);
 
 //database
 mongoose
@@ -49,11 +51,47 @@ app.use(
     cookie: { secure: true },
   })
 );
+const db = mongoose.connection;
+db.once("open", () => {
+  console.log("Connected to MongoDB");
+});
+
+io.on("connection", (socket) => {
+  console.log("A user connected:", socket.id);
+
+  // Join private room for one-to-one communication
+  socket.on("joinRoom", ({ user1, user2 }) => {
+    const room = [user1, user2].sort().join("_");
+    socket.join(room);
+    console.log(`${socket.id} joined room: ${room}`);
+  });
+
+  // Send message
+  socket.on("sendMessage", async ({ sender, receiver, message }) => {
+    const room = [sender, receiver].sort().join("_");
+
+    // Save the message in MongoDB
+    const newMessage = new messageModal({ sender, receiver, message });
+    await newMessage.save();
+
+    // Emit the message to the room
+    io.to(room).emit("receiveMessage", {
+      sender,
+      message,
+      timestamp: newMessage.timestamp,
+    });
+  });
+
+  socket.on("disconnect", () => {
+    console.log("A user disconnected:", socket.id);
+  });
+});
 
 // app.use(passport.initialize());
 // Importing Routes
 const authRoute = require("./route/auth.route");
 const inventoryRoute = require("./route/warehouse.route");
+const messageModal = require("./modal/message.modal");
 app.use("/api", inventoryRoute);
 app.use("/api", require("./route/order.route"));
 app.use("/api", require("./route/purchase.route"));
