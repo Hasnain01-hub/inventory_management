@@ -2,7 +2,7 @@ const express = require("express");
 const messageModal = require("../modal/message.modal");
 const router = express.Router();
 
-router.get("/chat/:user1/:user2", async (req, res) => {
+router.post("/chat/:user1/:user2", async (req, res) => {
   const { user1, user2 } = req.params;
 
   // Fetch chat history from MongoDB
