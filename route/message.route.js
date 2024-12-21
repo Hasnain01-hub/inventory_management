@@ -17,3 +17,5 @@ router.post("/chat/:user1/:user2", async (req, res) => {
 
   res.json(messages);
 });
+
+module.exports = router;
