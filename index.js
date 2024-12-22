@@ -8,27 +8,26 @@ const bodyParser = require("body-parser");
 const cors = require("cors");
 const http = require("http");
 const { Server } = require("socket.io");
-require("dotenv").config();
+const dotenv = require("dotenv");
 //app
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+// Determine which environment file to load
+const envFile = process.env.NODE_ENV === "production" ? ".env.prod" : ".env";
+
+// Load environment variables
+dotenv.config({ path: envFile });
+
 //database
 mongoose
-  .connect(
-    process.env.NODE_ENV === "development"
-      ? process.env.DEVELOPMENT_MONGODB_URI
-      : process.env.NODE_ENV === "production"
-      ? process.env.PRODUCTION_MONGODB_URI
-      : "",
-    {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-      useFindAndModify: false,
-      useCreateIndex: true, // Enable this option
-    }
-  )
+  .connect(process.env.MONGODB_URI || "", {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    useFindAndModify: false,
+    useCreateIndex: true, // Enable this option
+  })
 
   .then(() => console.log("DB CONNECTED"))
   .catch((err) => console.log("DB CONNECTION ERR", err));
@@ -44,10 +43,7 @@ app.use(bodyParser.json({ limit: "500mb" }));
 
 app.use(
   cors({
-    origin:
-      process.env.NODE_ENV === "development"
-        ? process.env.DEVELOPMENT_ALLOWED_ORIGINS?.split(",")
-        : process.env.PRODUCTION_ALLOWED_ORIGINS?.split(","), // Allows access from this origin
+    origin: process.env.ALLOWED_ORIGINS?.split(","), // Allows access from this origin
     credentials: true,
   })
 );
