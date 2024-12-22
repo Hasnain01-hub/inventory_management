@@ -16,12 +16,19 @@ const io = new Server(server);
 
 //database
 mongoose
-  .connect(process.env.MONGODB_URI || "", {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-    useFindAndModify: false,
-    useCreateIndex: true, // Enable this option
-  })
+  .connect(
+    process.env.NODE_ENV === "development"
+      ? process.env.DEVELOPMENT_MONGODB_URI
+      : process.env.NODE_ENV === "production"
+      ? process.env.PRODUCTION_MONGODB_URI
+      : "",
+    {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      useFindAndModify: false,
+      useCreateIndex: true, // Enable this option
+    }
+  )
 
   .then(() => console.log("DB CONNECTED"))
   .catch((err) => console.log("DB CONNECTION ERR", err));
