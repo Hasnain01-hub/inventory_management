@@ -98,7 +98,10 @@ app.use("/api", require("./route/purchase.route"));
 app.use("/api", require("./route/sale.route"));
 app.use("/api", require("./route/expenses.route"));
 app.use("/api", require("./route/customer.route"));
+app.use("/api", require("./route/inventory.route"));
 app.use("/api", require("./route/return.route"));
+app.use("/api", require("./route/supplier.route"));
+app.use("/api", require("./route/shipment.route"));
 app.use("/api", require("./route/message.route"));
 app.use("/api/auth", authRoute);
 

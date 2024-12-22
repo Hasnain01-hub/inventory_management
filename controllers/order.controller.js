@@ -1,34 +1,6 @@
-const multer = require("multer");
-const path = require("path");
 const fs = require("fs");
 const Order = require("../modal/order.modal"); // Adjust the path as necessary
-
-// Upload files
-const uploadsDir = path.join(__dirname, "uploads");
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadsDir); // Directory to save files
-  },
-  filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`); // Add a timestamp to the file name
-  },
-});
-
-const upload = multer({
-  storage,
-  fileFilter: (req, file, cb) => {
-    const allowedMimeTypes = ["image/jpeg", "image/png", "application/pdf"];
-    if (allowedMimeTypes.includes(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(new Error("Invalid file type"));
-    }
-  },
-});
+const { upload, csv_upload } = require("../helpers/fileUpload");
 
 // Create Order
 exports.createOrder = async (req, res) => {

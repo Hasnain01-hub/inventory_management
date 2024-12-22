@@ -1,5 +1,10 @@
 const customerModal = require("../modal/customer.modal");
+const { csv_upload } = require("../helpers/fileUpload");
+const fs = require("fs");
+const csvParser = require("csv-parser");
 
+/* The `exports.fetchAllCustomer` function is responsible for fetching all customer records from the
+database. Here's a breakdown of what it does: */
 exports.fetchAllCustomer = async (req, res) => {
   if (req.admin) {
     await customerModal.find({}, async (err, customer) => {
@@ -32,6 +37,8 @@ exports.fetchAllCustomer = async (req, res) => {
 };
 
 //Create Customer
+/* The `exports.createCustomer` function is responsible for creating a new customer record in the
+database. Here's a breakdown of what it does: */
 exports.createCustomer = async (req, res) => {
   try {
     if (req.admin.type !== "ADMIN" && req.admin.type !== "SUPER_ADMIN") {
@@ -42,7 +49,7 @@ exports.createCustomer = async (req, res) => {
     }
 
     const {
-      name,
+      customer_name,
       customer_id,
       facebook_profile_url,
       date_added,
@@ -52,7 +59,7 @@ exports.createCustomer = async (req, res) => {
 
     // Create warehouse record
     const customer = new customerModal({
-      name,
+      customer_name,
       customer_id,
       facebook_profile_url,
       date_added,
@@ -80,6 +87,8 @@ exports.createCustomer = async (req, res) => {
 };
 
 //Edit Customer
+/* The `exports.editCustomer` function is responsible for updating an existing customer record in the
+database. Here's a breakdown of what it does: */
 exports.editCustomer = async (req, res) => {
   try {
     if (req.admin.type !== "ADMIN" && req.admin.type !== "SUPER_ADMIN") {
@@ -90,7 +99,7 @@ exports.editCustomer = async (req, res) => {
     }
 
     const {
-      name,
+      customer_name,
       customer_id,
       facebook_profile_url,
       date_added,
@@ -107,7 +116,7 @@ exports.editCustomer = async (req, res) => {
     }
 
     // Update the customer fields
-    customer.name = name || customer.name;
+    customer.customer_name = customer_name || customer.customer_name;
     customer.customer_id = customer_id || customer.customer_id;
     customer.facebook_profile_url =
       facebook_profile_url || customer.facebook_profile_url;
@@ -134,6 +143,8 @@ exports.editCustomer = async (req, res) => {
 };
 
 //Delete Customer
+/* The `exports.deleteCustomer` function is responsible for deleting a customer record from the
+database. Here's a breakdown of what it does: */
 exports.deleteCustomer = async (req, res) => {
   try {
     if (req.admin.type !== "ADMIN" && req.admin.type !== "SUPER_ADMIN") {
@@ -163,4 +174,77 @@ exports.deleteCustomer = async (req, res) => {
       error: error.message,
     });
   }
+};
+
+exports.importCustomersFromCSV = async (req, res) => {
+  console.log(csv_upload);
+  csv_upload.single("csv_file")(req, res, async (err) => {
+    if (err) {
+      return res
+        .status(400)
+        .json({ message: "File upload error", success: false, err: err });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({
+        message: "No file uploaded. Please upload a CSV file.",
+        success: false,
+      });
+    }
+
+    const filePath = req.file.path;
+
+    try {
+      const customerItems = [];
+
+      // Read and parse the CSV file
+      fs.createReadStream(filePath)
+        .pipe(csvParser())
+        .on("data", (row) => {
+          // Ensure each row contains valid data matching the Customer schema
+          const customer = {
+            customer_name: row.customer_name,
+            customer_id: row.customer_id,
+            facebook_profile_url: row.facebook_profile_url || null,
+            date_added: row.date_added ? new Date(row.date_added) : Date.now(),
+            country: row.country,
+            address: row.address,
+          };
+          customerItems.push(customer);
+        })
+        .on("end", async () => {
+          try {
+            // Save all customers to the database
+            await customerModal.insertMany(customerItems);
+            res.status(201).json({
+              message: "Customers imported successfully",
+              success: true,
+              data: customerItems,
+            });
+          } catch (dbError) {
+            console.error("Error saving to database:", dbError);
+            res.status(500).json({
+              message: "Error saving customers to database",
+              success: false,
+              error: dbError.message,
+            });
+          } finally {
+            // Clean up: Delete the temporary CSV file
+            fs.unlinkSync(filePath);
+          }
+        });
+    } catch (error) {
+      console.error("Error processing CSV file:", error);
+      res.status(500).json({
+        message: "Error processing CSV file",
+        success: false,
+        error: error.message,
+      });
+
+      // Clean up: Delete the temporary CSV file
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    }
+  });
 };

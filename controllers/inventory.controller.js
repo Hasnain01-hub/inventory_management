@@ -1,42 +1,13 @@
-const multer = require("multer");
-const path = require("path");
 const Inventory = require("../modal/inventory.modal");
 const fs = require("fs");
-
-const uploadsDir = path.join(__dirname, "uploads");
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-// Configure multer storage
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadsDir); // Directory to save files
-  },
-  filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`); // Add a timestamp to the file name
-  },
-});
-
-// File filter for specific MIME types
-const upload = multer({
-  storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // Limit to 5MB
-  fileFilter: (req, file, cb) => {
-    const allowedMimeTypes = ["image/jpeg", "image/png", "application/pdf"];
-    if (allowedMimeTypes.includes(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(new Error("Invalid file type"));
-    }
-  },
-});
+const csvParser = require("csv-parser");
+const { csv_upload, upload } = require("../helpers/fileUpload");
 
 exports.fetchAllInventory = async (req, res) => {
+  console.log(req.admin);
   if (req.admin) {
     await Inventory.find({}, async (err, inv) => {
       if (err) {
-        console.log(err);
         return res.status(401).json({
           message: "No Inventory found",
           success: false,
@@ -79,9 +50,10 @@ exports.fetchAllInventory = async (req, res) => {
 exports.createInventory = async (req, res) => {
   upload.single("product_photo")(req, res, async (err) => {
     if (err) {
+      console.log(err);
       return res
         .status(400)
-        .json({ message: "File upload error", success: false });
+        .json({ message: "File upload error", success: false, err: err });
     }
 
     if (req.admin.type !== "ADMIN" && req.admin.type !== "SUPER_ADMIN") {
@@ -158,7 +130,7 @@ exports.deleteInventory = async (req, res) => {
         success: false,
       });
     }
-    const { inventory_id } = req.body;
+    const inventory_id = req.params.id;
 
     // Find and delete the inventory record by ID
     const inventory = await Inventory.findByIdAndDelete(inventory_id);
@@ -310,16 +282,6 @@ exports.filterInventory = async (req, res) => {
   }
 };
 
-const csv_upload = multer({
-  dest: "uploads/", // Temporary folder for uploaded files
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype === "text/csv") {
-      cb(null, true);
-    } else {
-      cb(new Error("Only CSV files are allowed"));
-    }
-  },
-});
 // Import Inventory from CSV
 exports.importInventoryFromCSV = async (req, res) => {
   csv_upload.single("csv_file")(req, res, async (err) => {
