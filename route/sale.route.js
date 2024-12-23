@@ -3,9 +3,9 @@ const router = express.Router();
 const saleController = require("../controllers/sale.controller");
 const { verifyUser } = require("../middleware/auth.middleware");
 
-router.get("/fetch-all-sale", saleController.fetchAllSale);
+router.get("/fetch-all-sale", verifyUser, saleController.fetchAllSale);
 router.post("/create-sale", verifyUser, saleController.createSale);
 router.post("/edit-sale", verifyUser, saleController.editSale);
-router.post("/delete-sale", verifyUser, saleController.deleteSale);
+router.delete("/delete-sale", verifyUser, saleController.deleteSale);
 
 module.exports = router;

@@ -1,4 +1,7 @@
 const expensesModal = require("../modal/expenses.modal");
+const { csv_upload } = require("../helpers/fileUpload");
+const fs = require("fs");
+const csvParser = require("csv-parser");
 
 exports.fetchAllExpenses = async (req, res) => {
   if (req.admin) {
@@ -180,4 +183,84 @@ exports.deleteExpenses = async (req, res) => {
       error: error.message,
     });
   }
+};
+
+exports.importExpensesFromCSV = async (req, res) => {
+  csv_upload.single("csv_file")(req, res, async (err) => {
+    if (err) {
+      return res.status(400).json({
+        message: "File upload error",
+        success: false,
+        error: err.message,
+      });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({
+        message: "No file uploaded. Please upload a CSV file.",
+        success: false,
+      });
+    }
+
+    const filePath = req.file.path;
+
+    try {
+      const expenses = [];
+
+      // Read and parse the CSV file
+      fs.createReadStream(filePath)
+        .pipe(csvParser())
+        .on("data", (row) => {
+          // Map CSV row to the expenses schema
+          const expense = {
+            expense_id: row.expense_id,
+            expense_description: row.expense_description,
+            expense_amount: parseFloat(row.expense_amount),
+            country: row.country,
+            expense_date: new Date(row.expense_date),
+            expense_due_date: new Date(row.expense_due_date),
+            payment_method: row.payment_method,
+            status: row.status,
+            vendor_name: row.vendor_name,
+            currency: row.currency,
+            recurring: row.recurring === "true", // Convert to boolean
+          };
+          expenses.push(expense);
+        })
+        .on("end", async () => {
+          try {
+            // Validate and save expenses to the database
+            await expensesModal.insertMany(expenses);
+
+            res.status(201).json({
+              message: "Expenses imported successfully",
+              success: true,
+              data: expenses,
+            });
+          } catch (dbError) {
+            console.error("Error saving expenses to database:", dbError);
+            res.status(500).json({
+              message: "Error saving expenses to database",
+              success: false,
+              error: dbError.message,
+            });
+          } finally {
+            // Clean up: Delete the temporary CSV file
+            fs.unlinkSync(filePath);
+          }
+        });
+    } catch (error) {
+      console.error("Error processing CSV file:", error);
+      res.status(500).json({
+        message: "Error processing CSV file",
+        success: false,
+        error: error.message,
+      });
+
+      // Clean up: Delete the temporary CSV file
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    }
+  });
 };

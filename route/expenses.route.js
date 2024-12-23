@@ -3,9 +3,22 @@ const router = express.Router();
 const expensesController = require("../controllers/expenses.controller");
 const { verifyUser } = require("../middleware/auth.middleware");
 
-router.get("/fetch-all-expenses", expensesController.fetchAllExpenses);
+router.get(
+  "/fetch-all-expenses",
+  verifyUser,
+  expensesController.fetchAllExpenses
+);
 router.post("/create-expenses", verifyUser, expensesController.createExpenses);
-router.post("/edit-expenses", verifyUser, expensesController.editExpenses);
-router.post("/delete-expenses", verifyUser, expensesController.deleteExpenses);
+router.post("/edit-expenses/:id", verifyUser, expensesController.editExpenses);
+router.delete(
+  "/delete-expenses/:id",
+  verifyUser,
+  expensesController.deleteExpenses
+);
+router.post(
+  "/import-expenses",
+  verifyUser,
+  expensesController.importExpensesFromCSV
+);
 
 module.exports = router;

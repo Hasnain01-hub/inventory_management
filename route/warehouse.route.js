@@ -3,13 +3,17 @@ const router = express.Router();
 const warehouseController = require("../controllers/warehouse.controller");
 const { verifyUser } = require("../middleware/auth.middleware");
 
-router.get("/fetch-all-warehouse", warehouseController.fetchAllWarehouse);
+router.get(
+  "/fetch-all-warehouse",
+  verifyUser,
+  warehouseController.fetchAllWarehouse
+);
 router.post(
   "/create-warehouse",
   verifyUser,
   warehouseController.createWarehouse
 );
-router.post(
+router.delete(
   "/delete-warehouse",
   verifyUser,
   warehouseController.deleteWarehouse
