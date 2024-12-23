@@ -8,11 +8,17 @@ const bodyParser = require("body-parser");
 const cors = require("cors");
 const http = require("http");
 const { Server } = require("socket.io");
-require("dotenv").config();
+const dotenv = require("dotenv");
 //app
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
+
+// Determine which environment file to load
+const envFile = process.env.NODE_ENV === "production" ? ".env.prod" : ".env";
+
+// Load environment variables
+dotenv.config({ path: envFile });
 
 //database
 mongoose
@@ -35,7 +41,7 @@ app.use(bodyParser.json({ limit: "500mb" }));
 
 app.use(
   cors({
-    origin: "http://localhost:3000", // Allows access from this origin
+    origin: process.env.ALLOWED_ORIGINS?.split(","), // Allows access from this origin
     credentials: true,
   })
 );
@@ -112,5 +118,5 @@ app.use("/", function (req, res) {
 //port
 const port = process.env.PORT || 8000;
 app.listen(port, () => {
-  console.log("Server is Running");
+  console.log(`Server is Running on ${port}`);
 });
